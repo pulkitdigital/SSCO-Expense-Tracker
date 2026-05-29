@@ -70,7 +70,7 @@ function Dashboard() {
 
   const summary = useMemo(() => {
     const totalReceipt = last30Days.reduce(
-      (sum, expense) => sum + (expense.totalAmount || 0),
+      (sum, expense) => sum + (expense.freshReceipt || 0),
       0
     );
     const totalSpent = last30Days.reduce(
