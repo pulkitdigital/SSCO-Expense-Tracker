@@ -1,0 +1,9 @@
+node_modules/
+.env
+Frontend/build/
+Backend/data/*.db
+dist/
+*.log
+.json
+
+ssco-expense-tracker-10b7fc739175.json
