@@ -10,8 +10,17 @@ const {
   updateExpense,
   deleteExpense,
 } = require('../services/sqlite');
+const { syncToFirebase, isFirebaseEnabled } = require('../services/sync');
 
 const router = express.Router();
+
+// Background sync helper — never blocks the response
+function backgroundSync() {
+  if (!isFirebaseEnabled()) return;
+  syncToFirebase().catch(err =>
+    console.log('[sync] background sync failed:', err.message)
+  );
+}
 
 router.get('/expenses', (req, res) => {
   res.json(getAllExpenses());
@@ -26,11 +35,11 @@ router.post('/expenses', (req, res) => {
     return res.status(400).json({ error: 'freshReceipt is required' });
   }
 
-  const parsedActualGST = Number(actualGST ?? 0);
+  const parsedActualGST    = Number(actualGST    ?? 0);
   const parsedActualSalary = Number(actualSalary ?? 0);
-  const parsedActualOther = Number(actualOther ?? 0);
+  const parsedActualOther  = Number(actualOther  ?? 0);
 
-  const lastExpense = getLastExpense();
+  const lastExpense  = getLastExpense();
   const carryForward = lastExpense
     ? getCarryForward(lastExpense.totalAmount, lastExpense.totalSpent)
     : 0;
@@ -49,12 +58,16 @@ router.post('/expenses', (req, res) => {
     freshReceipt: Number(freshReceipt),
     carryForward,
     ...calculated,
-    actualGST: parsedActualGST,
+    actualGST:    parsedActualGST,
     actualSalary: parsedActualSalary,
-    actualOther: parsedActualOther,
+    actualOther:  parsedActualOther,
   });
 
   const saved = getExpenseByDate(date);
+
+  // Auto sync to Firebase after save
+  backgroundSync();
+
   res.status(201).json(saved);
 });
 
@@ -64,8 +77,8 @@ router.put('/expenses/:id', (req, res) => {
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Invalid expense id' });
   }
-  const existing = getExpenseById(id);
 
+  const existing = getExpenseById(id);
   if (!existing) {
     return res.status(404).json({ error: 'Expense not found' });
   }
@@ -76,11 +89,11 @@ router.put('/expenses/:id', (req, res) => {
     return res.status(400).json({ error: 'freshReceipt is required' });
   }
 
-  const parsedActualGST = Number(actualGST ?? 0);
+  const parsedActualGST    = Number(actualGST    ?? 0);
   const parsedActualSalary = Number(actualSalary ?? 0);
-  const parsedActualOther = Number(actualOther ?? 0);
+  const parsedActualOther  = Number(actualOther  ?? 0);
 
-  const previous = getExpenseBeforeDate(date, id);
+  const previous     = getExpenseBeforeDate(date, id);
   const carryForward = previous
     ? getCarryForward(previous.totalAmount, previous.totalSpent)
     : 0;
@@ -99,10 +112,13 @@ router.put('/expenses/:id', (req, res) => {
     freshReceipt: Number(freshReceipt),
     carryForward,
     ...calculated,
-    actualGST: parsedActualGST,
+    actualGST:    parsedActualGST,
     actualSalary: parsedActualSalary,
-    actualOther: parsedActualOther,
+    actualOther:  parsedActualOther,
   });
+
+  // Auto sync to Firebase after update
+  backgroundSync();
 
   res.json(updated);
 });
@@ -113,8 +129,8 @@ router.delete('/expenses/:id', (req, res) => {
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Invalid expense id' });
   }
-  const result = deleteExpense(id);
 
+  const result = deleteExpense(id);
   if (!result.changes) {
     return res.status(404).json({ error: 'Expense not found' });
   }
@@ -124,11 +140,9 @@ router.delete('/expenses/:id', (req, res) => {
 
 router.get('/expenses/:date', (req, res) => {
   const expense = getExpenseByDate(req.params.date);
-
   if (!expense) {
     return res.status(404).json({ error: 'Expense not found for this date' });
   }
-
   res.json(expense);
 });
 
