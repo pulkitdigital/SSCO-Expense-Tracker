@@ -227,3 +227,26 @@ export async function downloadPDF(dateFrom, dateTo) {
 export async function downloadRowPDF(id) {
   return downloadSinglePDFFile(id);
 }
+
+
+
+
+
+// NEW — Fill actuals for a receipt-only entry (PATCH /api/expenses/:id/entry)
+export async function fillExpenseEntry(id, data) {
+  try {
+    const response = await fetch(`${API_BASE}/api/expenses/${id}/entry`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Fill entry failed with status ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('fillExpenseEntry failed:', error);
+    throw error;
+  }
+}
