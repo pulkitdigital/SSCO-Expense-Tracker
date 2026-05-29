@@ -44,7 +44,7 @@ function EditExpenseModal({ isOpen, expense, onSave, onClose }) {
       actualSalary: expense.actualSalary ?? '',
       actualOther: expense.actualOther ?? '',
     });
-  }, [isOpen, expense?.id]);
+  }, [isOpen, expense]); // ← fixed: expense?.id → expense
 
   const carryForward = expense?.carryForward ?? 0;
 
