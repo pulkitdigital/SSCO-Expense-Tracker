@@ -1,7 +1,9 @@
 node_modules/
 .env
 Frontend/build/
+Backend/data/
 Backend/data/*.db
+Backend/*.db
 dist/
 *.log
 .json
