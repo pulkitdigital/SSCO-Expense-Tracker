@@ -22,32 +22,34 @@ import EditExpenseModal from '../components/EditExpenseModal';
 import PDFPreviewModal from '../components/PDFPreviewModal';
 
 const COLUMNS = [
-  { key: 'date', label: 'Date', group: 'base' },
-  { key: 'acNo', label: 'A/c No', group: 'base' },
-  { key: 'freshReceipt', label: 'Fresh Receipt', group: 'receipt', numeric: true },
-  { key: 'carryForward', label: 'Carry Fwd', group: 'receipt', numeric: true },
-  { key: 'totalAmount', label: 'Total Amt', group: 'receipt', numeric: true },
-  { key: 'budgetedGST', label: 'Bgt GST', group: 'budgeted', numeric: true },
-  { key: 'budgetedSalary', label: 'Bgt Salary', group: 'budgeted', numeric: true },
-  { key: 'budgetedOther', label: 'Bgt Other', group: 'budgeted', numeric: true },
-  { key: 'totalBudgeted', label: 'Total Bgt', group: 'budgeted', numeric: true },
-  { key: 'actualGST', label: 'Act GST', group: 'actual', numeric: true },
-  { key: 'actualSalary', label: 'Act Salary', group: 'actual', numeric: true },
-  { key: 'actualOther', label: 'Act Other', group: 'actual', numeric: true },
-  { key: 'totalSpent', label: 'Total Spent', group: 'actual', numeric: true },
-  { key: 'gstVariance', label: 'GST Var', group: 'variance', numeric: true, variance: true },
-  { key: 'salaryVariance', label: 'Sal Var', group: 'variance', numeric: true, variance: true },
-  { key: 'otherVariance', label: 'Other Var', group: 'variance', numeric: true, variance: true },
-  { key: 'totalVariance', label: 'Total Var', group: 'variance', numeric: true, variance: true },
+  { key: 'date',             label: 'Date',           group: 'base' },
+  { key: 'acNo',             label: 'A/c No',         group: 'base' },
+  { key: 'freshReceipt',     label: 'Fresh Receipt',  group: 'receipt',  numeric: true },
+  { key: 'carryForward',     label: 'Carry Fwd',      group: 'receipt',  numeric: true },
+  { key: 'totalAmount',      label: 'Total Amt',      group: 'receipt',  numeric: true },
+  { key: 'prevRemainingGST', label: 'Prev GST Carry', group: 'budgeted', numeric: true },
+  { key: 'budgetedGST',      label: 'Bgt GST',        group: 'budgeted', numeric: true },
+  { key: 'budgetedSalary',   label: 'Bgt Salary',     group: 'budgeted', numeric: true },
+  { key: 'budgetedOther',    label: 'Bgt Other',      group: 'budgeted', numeric: true },
+  { key: 'totalBudgeted',    label: 'Total Bgt',      group: 'budgeted', numeric: true },
+  { key: 'actualGST',        label: 'Act GST',        group: 'actual',   numeric: true },
+  { key: 'actualSalary',     label: 'Act Salary',     group: 'actual',   numeric: true },
+  { key: 'actualOther',      label: 'Act Other',      group: 'actual',   numeric: true },
+  { key: 'totalSpent',       label: 'Total Spent',    group: 'actual',   numeric: true },
+  { key: 'gstVariance',      label: 'GST Var',        group: 'variance', numeric: true, variance: true },
+  { key: 'salaryVariance',   label: 'Sal Var',        group: 'variance', numeric: true, variance: true },
+  { key: 'otherVariance',    label: 'Other Var',      group: 'variance', numeric: true, variance: true },
+  { key: 'totalVariance',    label: 'Total Var',      group: 'variance', numeric: true, variance: true },
 ];
 
+// Budgeted colspan is now 5 (added prevRemainingGST)
 const GROUP_HEADERS = [
-  { label: '', colspan: 2, className: 'bg-white' },
-  { label: 'Receipt', colspan: 3, className: 'bg-[#FFD700] text-gray-800' },
-  { label: 'Budgeted', colspan: 4, className: 'bg-[#92D050] text-gray-800' },
-  { label: 'Actual', colspan: 4, className: 'bg-red-600 text-white' },
-  { label: 'Variance', colspan: 4, className: 'bg-[#D9D9D9] text-gray-800' },
-  { label: '', colspan: 1, className: 'bg-white' },
+  { label: '',          colspan: 2, className: 'bg-white' },
+  { label: 'Receipt',   colspan: 3, className: 'bg-[#FFD700] text-gray-800' },
+  { label: 'Budgeted',  colspan: 5, className: 'bg-[#92D050] text-gray-800' },
+  { label: 'Actual',    colspan: 4, className: 'bg-red-600 text-white' },
+  { label: 'Variance',  colspan: 4, className: 'bg-[#D9D9D9] text-gray-800' },
+  { label: '',          colspan: 1, className: 'bg-white' },
 ];
 
 function formatCurrency(value) {
@@ -272,9 +274,9 @@ function AllExpenses() {
             <table className="min-w-full border-collapse text-left text-sm">
               <thead>
                 <tr>
-                  {GROUP_HEADERS.map((group) => (
+                  {GROUP_HEADERS.map((group, i) => (
                     <th
-                      key={group.label || 'base'}
+                      key={i}
                       colSpan={group.colspan}
                       className={`border border-gray-200 px-3 py-2 text-center text-xs font-bold uppercase tracking-wide ${group.className}`}
                     >
@@ -284,7 +286,8 @@ function AllExpenses() {
                 </tr>
                 <tr>
                   {COLUMNS.map((column) => {
-                    let headerClass = 'border border-gray-200 px-3 py-2 text-xs font-semibold whitespace-nowrap ';
+                    let headerClass =
+                      'border border-gray-200 px-3 py-2 text-xs font-semibold whitespace-nowrap ';
                     if (column.group === 'receipt') {
                       headerClass += 'bg-[#FFD700] text-gray-800';
                     } else if (column.group === 'budgeted') {
@@ -323,6 +326,14 @@ function AllExpenses() {
 
                       if (column.variance) {
                         cellClass += ` ${getVarianceClass(raw)}`;
+                      }
+
+                      // prevRemainingGST — orange color jab value > 0
+                      if (
+                        column.key === 'prevRemainingGST' &&
+                        (raw ?? 0) > 0
+                      ) {
+                        cellClass += ' text-orange-500 font-medium';
                       }
 
                       return (
