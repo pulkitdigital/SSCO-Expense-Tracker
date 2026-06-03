@@ -36,6 +36,7 @@ function initDB() {
       acNo TEXT,
       freshReceipt REAL NOT NULL DEFAULT 0,
       carryForward REAL NOT NULL DEFAULT 0,
+      prevRemainingGST REAL DEFAULT 0,
       totalAmount REAL NOT NULL DEFAULT 0,
       budgetedGST REAL NOT NULL DEFAULT 0,
       budgetedSalary REAL NOT NULL DEFAULT 0,
@@ -65,6 +66,12 @@ function initDB() {
 
     INSERT OR IGNORE INTO profile (id) VALUES (1);
   `);
+
+  try {
+    db.prepare('ALTER TABLE expenses ADD COLUMN prevRemainingGST REAL DEFAULT 0').run();
+  } catch (e) {
+    // column already exists, ignore
+  }
 }
 
 /**
@@ -75,13 +82,13 @@ function initDB() {
 function insertExpense(data) {
   const stmt = getDB().prepare(`
     INSERT INTO expenses (
-      date, acNo, freshReceipt, carryForward, totalAmount,
+      date, acNo, freshReceipt, carryForward, prevRemainingGST, totalAmount,
       budgetedGST, budgetedSalary, budgetedOther, totalBudgeted,
       actualGST, actualSalary, actualOther, totalSpent,
       gstVariance, salaryVariance, otherVariance, totalVariance,
       synced
     ) VALUES (
-      @date, @acNo, @freshReceipt, @carryForward, @totalAmount,
+      @date, @acNo, @freshReceipt, @carryForward, @prevRemainingGST, @totalAmount,
       @budgetedGST, @budgetedSalary, @budgetedOther, @totalBudgeted,
       @actualGST, @actualSalary, @actualOther, @totalSpent,
       @gstVariance, @salaryVariance, @otherVariance, @totalVariance,
@@ -94,6 +101,7 @@ function insertExpense(data) {
     acNo: data.acNo ?? null,
     freshReceipt: data.freshReceipt ?? 0,
     carryForward: data.carryForward ?? 0,
+    prevRemainingGST: data.prevRemainingGST ?? 0,
     totalAmount: data.totalAmount ?? 0,
     budgetedGST: data.budgetedGST ?? 0,
     budgetedSalary: data.budgetedSalary ?? 0,

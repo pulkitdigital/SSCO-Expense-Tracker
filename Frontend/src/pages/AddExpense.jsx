@@ -843,20 +843,19 @@ function calculatePreview({
   actualSalary,
   actualOther,
   prevBudgetedGST = 0,
-  prevActualGST   = 0,
+  prevActualGST = 0,
 }) {
-  const totalAmount        = freshReceipt + carryForward;
+  const totalAmount = freshReceipt + carryForward;
   const budgetedGSTOnFresh = freshReceipt * 0.18;
-  const prevRemainingGST   = prevBudgetedGST - prevActualGST;
-  const budgetedGST        = budgetedGSTOnFresh + prevRemainingGST;
-  const nonGSTCarry        = carryForward - prevRemainingGST;
-  const remaining          = (freshReceipt - budgetedGSTOnFresh) + nonGSTCarry;
-  const budgetedSalary     = remaining * 0.5;
-  const budgetedOther      = remaining * 0.5;
-  const totalBudgeted      = budgetedGST + budgetedSalary + budgetedOther;
-  const totalSpent         = actualGST + actualSalary + actualOther;
-  const totalVariance      = totalBudgeted - totalSpent;
-
+  const prevRemainingGST = prevBudgetedGST - prevActualGST;
+  const budgetedGST = budgetedGSTOnFresh + prevRemainingGST;
+  const nonGSTCarry = carryForward - prevRemainingGST;
+  const remaining = (freshReceipt - budgetedGSTOnFresh) + nonGSTCarry;
+  const budgetedSalary = remaining * 0.5;
+  const budgetedOther = remaining * 0.5;
+  const totalBudgeted = budgetedGST + budgetedSalary + budgetedOther;
+  const totalSpent = actualGST + actualSalary + actualOther;
+  const totalVariance = totalBudgeted - totalSpent;
   return {
     totalAmount,
     budgetedGST,
@@ -1027,7 +1026,7 @@ function AddReceiptTab({ expenses, carryForward }) {
           <PreviewRow label="Total Amount"        value={formatCurrency(calculated.totalAmount)} />
           {calculated.prevRemainingGST > 0 && (
             <PreviewRow
-              label="Prev. Remaining GST"
+              label="Prev GST Carry"
               value={formatCurrency(calculated.prevRemainingGST)}
               valueClassName="text-orange-500"
             />

@@ -33,7 +33,7 @@ Backend/
 | `routes/expenses.js` | `GET /api/expenses`, `POST /api/expenses`, `GET /api/expenses/:date` |
 | `routes/exports.js` | `GET /api/export/excel`, `GET /api/export/pdf` |
 | `routes/profile.js` | `GET /api/profile`, `POST /api/profile` |
-| `services/calculations.js` | All formulas: GST 18%, carry forward, 50/50 split, variance |
+| `services/calculations.js` | All formulas: GST 18% on freshReceipt only, prevRemainingGST carry, 50/50 split on non-GST remaining, variance |
 | `services/sqlite.js` | SQLite DB init, all CRUD functions, profile table |
 | `services/sync.js` | Firebase Admin init, `syncToFirebase()`, online push logic |
 | `services/excelExport.js` | ExcelJS — styled `.xlsx` with color headers and formulas |
@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   acNo TEXT,
   freshReceipt REAL,
   carryForward REAL,
+  prevRemainingGST REAL DEFAULT 0,   -- Previous day unspent GST carried forward
   totalAmount REAL,
   budgetedGST REAL,
   budgetedSalary REAL,
@@ -146,35 +147,43 @@ CREATE TABLE IF NOT EXISTS profile (
 
 ## Business Logic — All Formulas
 
-```
-// Input fields (user provides these):
-// date, acNo, freshReceipt, actualGST, actualSalary, actualOther
+### Input Fields (user provides):
+date, acNo, freshReceipt, actualGST, actualSalary, actualOther
 
-// Step 1: Carry Forward from previous day
+### Step 1 — Carry Forward
 carryForward = lastExpense ? (lastExpense.totalAmount - lastExpense.totalSpent) : 0
 
-// Step 2: Total Amount
+### Step 2 — Total Amount
 totalAmount = freshReceipt + carryForward
 
-// Step 3: Budgeted breakdown
-budgetedGST    = totalAmount * 0.18          // 18% GST
-remaining      = totalAmount - budgetedGST   // 82%
-budgetedSalary = remaining * 0.50            // 50% of remaining
-budgetedOther  = remaining * 0.50            // 50% of remaining
-totalBudgeted  = budgetedGST + budgetedSalary + budgetedOther  // always = totalAmount
+### Step 3 — GST Budget (on freshReceipt only, not carryForward)
+budgetedGSTOnFresh = freshReceipt × 18%
+prevRemainingGST   = prevBudgetedGST - prevActualGST  (previous day unspent GST)
+budgetedGST        = budgetedGSTOnFresh + prevRemainingGST
 
-// Step 4: Actuals (user entered)
-totalSpent = actualGST + actualSalary + actualOther
+### Step 4 — Salary / Other Budget
+nonGSTCarry    = carryForward - prevRemainingGST
+remaining      = (freshReceipt - budgetedGSTOnFresh) + nonGSTCarry
+budgetedSalary = remaining × 50%
+budgetedOther  = remaining × 50%
 
-// Step 5: Variances (positive = saved, negative = overspent)
+### Step 5 — Total Budgeted
+totalBudgeted = budgetedGST + budgetedSalary + budgetedOther
+
+### Step 6 — Actuals and Variances
+totalSpent     = actualGST + actualSalary + actualOther
 gstVariance    = budgetedGST    - actualGST
 salaryVariance = budgetedSalary - actualSalary
 otherVariance  = budgetedOther  - actualOther
 totalVariance  = gstVariance + salaryVariance + otherVariance
 
-// Step 6: Next day carry forward
+### Step 7 — Next Day Carry Forward
 nextCarryForward = totalAmount - totalSpent
-```
+
+### Key Rule:
+GST is budgeted only on freshReceipt, NOT on carryForward.
+Previous day unspent GST (prevRemainingGST) is tracked separately and added to today's GST budget.
+carryForward is split into GST portion (prevRemainingGST) and non-GST portion (nonGSTCarry).
 
 ## Excel Export — Column Structure
 
@@ -185,18 +194,19 @@ nextCarryForward = totalAmount - totalSpent
 | C | Fresh Receipt | yellow `#FFD700` | black |
 | D | Carry Forward | yellow `#FFD700` | black |
 | E | Total Amount | yellow `#FFD700` | black |
-| F | Budgeted GST | green `#92D050` | black |
-| G | Budgeted Salary | green `#92D050` | black |
-| H | Budgeted Other | green `#92D050` | black |
-| I | Total Budgeted | green `#92D050` | black |
-| J | Actual GST | red `#FF0000` | white |
-| K | Actual Salary | red `#FF0000` | white |
-| L | Actual Other | red `#FF0000` | white |
-| M | Total Spent | red `#FF0000` | white |
-| N | GST Variance | gray `#D9D9D9` | black |
-| O | Salary Variance | gray `#D9D9D9` | black |
-| P | Other Variance | gray `#D9D9D9` | black |
-| Q | Total Variance | gray `#D9D9D9` | black |
+| F | Prev GST Carry | orange `#FFA500` | black |
+| G | Budgeted GST | green `#92D050` | black |
+| H | Budgeted Salary | green `#92D050` | black |
+| I | Budgeted Other | green `#92D050` | black |
+| J | Total Budgeted | green `#92D050` | black |
+| K | Actual GST | red `#FF0000` | white |
+| L | Actual Salary | red `#FF0000` | white |
+| M | Actual Other | red `#FF0000` | white |
+| N | Total Spent | red `#FF0000` | white |
+| O | GST Variance | gray `#D9D9D9` | black |
+| P | Salary Variance | gray `#D9D9D9` | black |
+| Q | Other Variance | gray `#D9D9D9` | black |
+| R | Total Variance | gray `#D9D9D9` | black |
 
 ## PDF Export — Layout Structure
 

@@ -21,11 +21,13 @@ const COLORS = {
   red: { r: 0.86, g: 0.15, b: 0.15 },
   green: { r: 0.086, g: 0.639, b: 0.29 },
   orange: { r: 0.976, g: 0.549, b: 0.086 },
+  prevGstCarry: { r: 1, g: 0.647, b: 0 },
 };
 
 const GROUP_HEADERS = [
   { label: '', colspan: 2, bg: 'white', textDark: true },
   { label: 'Receipt', colspan: 3, bg: 'receipt', textDark: true },
+  { label: '', colspan: 1, bg: 'prevGstCarry', textDark: true },
   { label: 'Budgeted', colspan: 4, bg: 'budgeted', textDark: true },
   { label: 'Actual', colspan: 4, bg: 'actual', textDark: false },
   { label: 'Variance', colspan: 4, bg: 'variance', textDark: true },
@@ -38,6 +40,7 @@ const COLUMN_WIDTH_WEIGHTS = {
   freshReceipt: 1.25,
   carryForward: 1.05,
   totalAmount: 1.1,
+  prevRemainingGST: 1.05,
   budgetedGST: 1.05,
   budgetedSalary: 1.15,
   budgetedOther: 1.1,
@@ -58,6 +61,7 @@ const COLUMNS = [
   { key: 'freshReceipt', label: 'Fresh Receipt', group: 'receipt', numeric: true },
   { key: 'carryForward', label: 'Carry Fwd', group: 'receipt', numeric: true },
   { key: 'totalAmount', label: 'Total Amt', group: 'receipt', numeric: true },
+  { key: 'prevRemainingGST', label: 'Prev GST Carry', group: 'prevGstCarry', numeric: true },
   { key: 'budgetedGST', label: 'Bgt GST', group: 'budgeted', numeric: true },
   { key: 'budgetedSalary', label: 'Bgt Salary', group: 'budgeted', numeric: true },
   { key: 'budgetedOther', label: 'Bgt Other', group: 'budgeted', numeric: true },
@@ -125,6 +129,7 @@ function computeSummary(expenses) {
 
 function getGroupColorKey(group) {
   if (group === 'receipt') return 'receipt';
+  if (group === 'prevGstCarry') return 'prevGstCarry';
   if (group === 'budgeted') return 'budgeted';
   if (group === 'actual') return 'actual';
   if (group === 'variance') return 'variance';
@@ -544,6 +549,7 @@ function generateExpensePreviewHTML(expenses, profile, dateFrom, dateTo, options
     .col-th { font-weight: 600; font-size: 9px; text-align: center; white-space: normal; line-height: 1.2; }
     .grp-white { background: #ffffff; }
     .grp-receipt { background: #FFD700; }
+    .grp-prevGstCarry { background: #FFA500; }
     .grp-budgeted { background: #92D050; }
     .grp-actual { background: #C00000; }
     .grp-variance { background: #D9D9D9; }
@@ -589,7 +595,7 @@ function generateExpensePreviewHTML(expenses, profile, dateFrom, dateTo, options
         <tr>${columnHeaderCells}</tr>
       </thead>
       <tbody>
-        ${dataRows || '<tr><td colspan="17" style="text-align:center;padding:16px;">No entries</td></tr>'}
+        ${dataRows || '<tr><td colspan="18" style="text-align:center;padding:16px;">No entries</td></tr>'}
       </tbody>
     </table>
   </div>

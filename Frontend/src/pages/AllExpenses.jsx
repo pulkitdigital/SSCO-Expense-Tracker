@@ -96,16 +96,18 @@ function AllExpenses() {
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return expenses.filter((expense) => {
-      if (dateFrom && expense.date < dateFrom) return false;
-      if (dateTo && expense.date > dateTo) return false;
+    return expenses
+      .filter((expense) => {
+        if (dateFrom && expense.date < dateFrom) return false;
+        if (dateTo && expense.date > dateTo) return false;
 
-      if (!query) return true;
+        if (!query) return true;
 
-      const dateMatch = expense.date?.toLowerCase().includes(query);
-      const acMatch = expense.acNo?.toLowerCase().includes(query);
-      return dateMatch || acMatch;
-    });
+        const dateMatch = expense.date?.toLowerCase().includes(query);
+        const acMatch = expense.acNo?.toLowerCase().includes(query);
+        return dateMatch || acMatch;
+      })
+      .sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
   }, [expenses, search, dateFrom, dateTo]);
 
   const summary = useMemo(() => {
@@ -328,11 +330,7 @@ function AllExpenses() {
                         cellClass += ` ${getVarianceClass(raw)}`;
                       }
 
-                      // prevRemainingGST — orange color jab value > 0
-                      if (
-                        column.key === 'prevRemainingGST' &&
-                        (raw ?? 0) > 0
-                      ) {
+                      if (column.key === 'prevRemainingGST' && (raw ?? 0) > 0) {
                         cellClass += ' text-orange-500 font-medium';
                       }
 

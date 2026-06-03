@@ -22,6 +22,7 @@ Stores data offline (SQLite) and syncs to cloud (Firebase) when online.
 
 - [x] Daily expense entry with 6 input fields
 - [x] Auto-calculation: GST 18%, salary 50/50 split, carry forward
+- [x] Smart GST carry — previous day unspent GST tracked separately and added to next day GST budget
 - [x] Live preview of all calculated values while typing
 - [x] Carry Forward — previous day remaining auto-added to next day
 - [x] Dashboard with stat cards and charts (bar + pie)
@@ -84,22 +85,29 @@ SSCO EXPENSE TRACKER/
 
 ## Business Logic — Calculation Rules
 
-```
 Given: freshReceipt, actualGST, actualSalary, actualOther
 
-carryForward   = previousDay.totalAmount - previousDay.totalSpent
-totalAmount    = freshReceipt + carryForward
+carryForward       = previousDay.totalAmount - previousDay.totalSpent
+totalAmount        = freshReceipt + carryForward
 
-budgetedGST    = totalAmount × 18%
-remaining      = totalAmount - budgetedGST
-budgetedSalary = remaining × 50%
-budgetedOther  = remaining × 50%
-totalBudgeted  = totalAmount (always equal)
+budgetedGSTOnFresh = freshReceipt × 18%
+prevRemainingGST   = previousDay.budgetedGST - previousDay.actualGST
+budgetedGST        = budgetedGSTOnFresh + prevRemainingGST
 
-totalSpent     = actualGST + actualSalary + actualOther
-totalVariance  = totalBudgeted - totalSpent
+nonGSTCarry        = carryForward - prevRemainingGST
+remaining          = (freshReceipt - budgetedGSTOnFresh) + nonGSTCarry
+budgetedSalary     = remaining × 50%
+budgetedOther      = remaining × 50%
+totalBudgeted      = budgetedGST + budgetedSalary + budgetedOther
+
+totalSpent         = actualGST + actualSalary + actualOther
+totalVariance      = totalBudgeted - totalSpent
   (positive = money saved, negative = overspent)
-```
+
+Key Rule:
+- GST is budgeted only on freshReceipt, NOT on carryForward
+- Previous day unspent GST (prevRemainingGST) is carried forward separately into today's GST budget
+- carryForward splits into GST portion and non-GST portion to keep categories accurate
 
 ---
 
@@ -226,6 +234,7 @@ npm run dist
 **Excel (.xlsx):**
 
 - Color-coded column groups (Receipt=yellow, Budgeted=green, Actual=red, Variance=gray)
+- Prev GST Carry column (orange) in Budgeted group showing previous day unspent GST
 - All rows with ₹ Indian number formatting
 - Auto-width columns, frozen header rows
 - Title row merged across all columns
@@ -263,6 +272,7 @@ dist/
 | Excel download not working | Check Backend is running, check browser console for errors |
 | SQLite error on Windows | Run `npm rebuild better-sqlite3` in `Backend/` |
 | Build fails | Delete `Frontend/node_modules` and reinstall |
+| Old entries deleted after GitHub push | data/expenses.db is git-ignored — SQLite is local only. Use Firebase sync for cloud backup |
 
 ---
 

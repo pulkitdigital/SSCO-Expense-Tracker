@@ -110,14 +110,14 @@ REACT_APP_BACKEND_URL=http://localhost:5000
 ### Add Expense
 
 - **Route:** `/add`
-- **What the user sees:** Six-field entry form (date, A/c No, fresh receipt, three actuals) and live read-only preview of calculated budgets and variance.
+- **What the user sees:** Six-field entry form (date, A/c No, fresh receipt, three actuals). Live preview shows: Carry Forward, Total Amount, Prev GST Carry (orange, only when > 0), Budgeted GST, Budgeted Salary, Budgeted Other
 - **Reads from context:** `expenses`, `loading`, `saveExpense`, `showToast`
 - **Actions:** `saveExpense()` on submit → `showToast()` on success/error.
 
 ### All Expenses
 
 - **Route:** `/all`
-- **What the user sees:** Search and date filters, summary row, full expense table with color-coded column groups, Excel/PDF export buttons.
+- **What the user sees:** Search and date filters, summary row, full expense table with color-coded column groups. Prev GST Carry column (orange) added in Budgeted group — shows previous day unspent GST. Excel/PDF export buttons.
 - **Reads from context:** `expenses`, `loading`
 - **Actions:** `downloadExcel()`, `downloadPDF(from, to)` from `api.js` (not context).
 
@@ -147,18 +147,24 @@ REACT_APP_BACKEND_URL=http://localhost:5000
 
 ## Business Logic (inline in AddExpense.jsx)
 
-```
-carryForward = lastExpense ? (lastExpense.totalAmount - lastExpense.totalSpent) : 0
-totalAmount = freshReceipt + carryForward
-budgetedGST = totalAmount * 0.18
-remaining = totalAmount - budgetedGST
-budgetedSalary = remaining * 0.50
-budgetedOther = remaining * 0.50
-totalBudgeted = budgetedGST + budgetedSalary + budgetedOther
-totalSpent = actualGST + actualSalary + actualOther
-totalVariance = totalBudgeted - totalSpent
+carryForward       = lastExpense ? (lastExpense.totalAmount - lastExpense.totalSpent) : 0
+totalAmount        = freshReceipt + carryForward
+
+budgetedGSTOnFresh = freshReceipt × 18%
+prevRemainingGST   = prevBudgetedGST - prevActualGST
+budgetedGST        = budgetedGSTOnFresh + prevRemainingGST
+
+nonGSTCarry        = carryForward - prevRemainingGST
+remaining          = (freshReceipt - budgetedGSTOnFresh) + nonGSTCarry
+budgetedSalary     = remaining × 50%
+budgetedOther      = remaining × 50%
+totalBudgeted      = budgetedGST + budgetedSalary + budgetedOther
+
+totalSpent         = actualGST + actualSalary + actualOther
+totalVariance      = totalBudgeted - totalSpent
 nextDayCarryForward = totalAmount - totalSpent
-```
+
+Key Rule: GST calculated only on freshReceipt. prevRemainingGST tracked separately.
 
 ## Electron IPC Handlers table
 

@@ -435,6 +435,11 @@ router.post('/expenses', (req, res) => {
 
   const { date, acNo, freshReceipt, actualGST, actualSalary, actualOther } = req.body;
 
+  const lastExpense = getLastExpense();
+  const carryForward = lastExpense ? (lastExpense.totalAmount - lastExpense.totalSpent) : 0;
+  const prevBudgetedGST = lastExpense ? (lastExpense.budgetedGST ?? 0) : 0;
+  const prevActualGST = lastExpense ? (lastExpense.actualGST ?? 0) : 0;
+
   if (freshReceipt === undefined || freshReceipt === null || freshReceipt === '') {
     return res.status(400).json({ error: 'freshReceipt is required' });
   }
@@ -443,31 +448,15 @@ router.post('/expenses', (req, res) => {
   const parsedActualSalary = Number(actualSalary ?? 0);
   const parsedActualOther  = Number(actualOther  ?? 0);
 
-  const lastExpense  = getLastExpense();
-  const carryForward = lastExpense
-    ? getCarryForward(lastExpense.totalAmount, lastExpense.totalSpent)
-    : 0;
-
-  // Pass previous day's GST values for new calculation logic
-  const prevBudgetedGST = lastExpense ? (lastExpense.budgetedGST ?? 0) : 0;
-  const prevActualGST   = lastExpense ? (lastExpense.actualGST   ?? 0) : 0;
-
-  const calculated = calculate(
-    Number(freshReceipt),
-    carryForward,
-    parsedActualGST,
-    parsedActualSalary,
-    parsedActualOther,
-    prevBudgetedGST,
-    prevActualGST
-  );
+  const result = calculate(freshReceipt, carryForward, actualGST, actualSalary, actualOther, prevBudgetedGST, prevActualGST);
 
   insertExpense({
     date,
     acNo,
     freshReceipt: Number(freshReceipt),
     carryForward,
-    ...calculated,
+    ...result,
+    prevRemainingGST: result.prevRemainingGST,
     actualGST:    parsedActualGST,
     actualSalary: parsedActualSalary,
     actualOther:  parsedActualOther,
