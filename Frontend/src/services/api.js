@@ -5,10 +5,6 @@ const API_BASE =
   process.env.REACT_APP_API_URL ||
   'http://localhost:5000';
 
-/**
- * @param {Response} response
- * @returns {Promise<object>}
- */
 async function parseJsonResponse(response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -116,9 +112,7 @@ export async function updateExpense(id, data) {
     });
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errBody.error || `Update failed with status ${response.status}`
-      );
+      throw new Error(errBody.error || `Update failed with status ${response.status}`);
     }
     return await response.json();
   } catch (error) {
@@ -135,9 +129,7 @@ export async function deleteExpense(id) {
     });
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errBody.error || `Delete failed with status ${response.status}`
-      );
+      throw new Error(errBody.error || `Delete failed with status ${response.status}`);
     }
     return await response.json();
   } catch (error) {
@@ -165,9 +157,7 @@ export async function fetchPDFPreviewHtml(previewUrl) {
     const response = await fetch(previewUrl);
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errBody.error || `Preview failed with status ${response.status}`
-      );
+      throw new Error(errBody.error || `Preview failed with status ${response.status}`);
     }
     return response.text();
   } catch (error) {
@@ -189,9 +179,7 @@ export async function downloadPDFFile(dateFrom, dateTo) {
     const response = await fetch(url);
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errBody.error || `PDF download failed with status ${response.status}`
-      );
+      throw new Error(errBody.error || `PDF download failed with status ${response.status}`);
     }
     const buffer = await response.arrayBuffer();
     return savePDFFile(buffer);
@@ -206,9 +194,7 @@ export async function downloadSinglePDFFile(id) {
     const response = await fetch(`${API_BASE}/api/export/pdf/${id}`);
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errBody.error || `PDF download failed with status ${response.status}`
-      );
+      throw new Error(errBody.error || `PDF download failed with status ${response.status}`);
     }
     const buffer = await response.arrayBuffer();
     return savePDFFile(buffer, `SSCO_Expense_${id}.pdf`);
@@ -227,10 +213,6 @@ export async function downloadPDF(dateFrom, dateTo) {
 export async function downloadRowPDF(id) {
   return downloadSinglePDFFile(id);
 }
-
-
-
-
 
 // NEW — Fill actuals for a receipt-only entry (PATCH /api/expenses/:id/entry)
 export async function fillExpenseEntry(id, data) {
